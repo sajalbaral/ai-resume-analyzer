@@ -71,12 +71,8 @@ function App() {
     const prompt = buildPrompt(resume, jobDesc);
     const response = await fetch("/api/analyze", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        prompt,
-      }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt }),
     });
     const data = await response.json();
     if (!response.ok)

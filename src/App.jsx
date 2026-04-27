@@ -13,8 +13,6 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const API_KEY = import.meta.env.VITE_API_KEY;
-
   function handleInput(e) {
     if (e.target.name === "Resume-input") {
       setResumeInput(e.target.value);
@@ -71,11 +69,14 @@ function App() {
 
   async function analyzeResume(resume, jobDesc) {
     const prompt = buildPrompt(resume, jobDesc);
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
-    const response = await fetch(url, {
+    const response = await fetch("/api/analyze", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        prompt,
+      }),
     });
     const data = await response.json();
     if (!response.ok)

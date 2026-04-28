@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./App.css";
 import Header from "./components/Header";
 import InputCard from "./components/InputCard";
 import AnalyzeButton from "./components/AnalyzeButton";
 import ResultCard from "./components/ResultCard";
+import Auth from "./components/Auth";
+import supabase from "./supabase";
 import { ResumeIcon, BriefcaseIcon } from "./components/Icons";
 import Footer from "./components/Footer";
 
@@ -13,6 +15,29 @@ function App() {
   const [analysisResult, setAnalysisResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const session = supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        setUser(session.user);
+      }
+    });
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (event === "SIGNED_IN") {
+          setUser(session.user);
+        } else if (event === "SIGNED_OUT") {
+          setUser(null);
+        }
+      },
+    );
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
 
   function handleInput(e) {
     if (e.target.name === "Resume-input") {
@@ -87,36 +112,46 @@ function App() {
     return JSON.parse(cleaned);
   }
 
+  async function handleLogout() {
+    const { error } = await supabase.auth.signOut();
+  }
+
   return (
-    <div className="app">
-      <Header />
+    <>
+      {user ? (
+        <div className="app">
+          <Header user={user} handleLogout={handleLogout} />
 
-      <div className="input-grid">
-        <InputCard
-          label="Resume"
-          name="Resume-input"
-          id="Resume-input"
-          value={resumeInput}
-          onChange={handleInput}
-          placeholder="Paste your resume here — work experience, skills, education..."
-          icon={<ResumeIcon />}
-        />
-        <InputCard
-          label="Job Description"
-          name="Job-description"
-          id="Job-description"
-          value={jobDescription}
-          onChange={handleInput}
-          placeholder="Paste the job description — requirements, responsibilities, qualifications..."
-          icon={<BriefcaseIcon />}
-        />
-      </div>
+          <div className="input-grid">
+            <InputCard
+              label="Resume"
+              name="Resume-input"
+              id="Resume-input"
+              value={resumeInput}
+              onChange={handleInput}
+              placeholder="Paste your resume here — work experience, skills, education..."
+              icon={<ResumeIcon />}
+            />
+            <InputCard
+              label="Job Description"
+              name="Job-description"
+              id="Job-description"
+              value={jobDescription}
+              onChange={handleInput}
+              placeholder="Paste the job description — requirements, responsibilities, qualifications..."
+              icon={<BriefcaseIcon />}
+            />
+          </div>
 
-      <AnalyzeButton onClick={clickedAnalyze} loading={loading} />
+          <AnalyzeButton onClick={clickedAnalyze} loading={loading} />
 
-      <ResultCard result={analysisResult} error={error} />
-      <Footer />
-    </div>
+          <ResultCard result={analysisResult} error={error} />
+          <Footer />
+        </div>
+      ) : (
+        <Auth user={user} setUser={setUser} />
+      )}
+    </>
   );
 }
 
